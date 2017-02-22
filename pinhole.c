@@ -12,7 +12,7 @@
 
 //example command line argument:
 //./pinhole /project/ledra004/Data_Mining_Comp/Large_Sq/Large\ Squares.shp /project/ledra004/Data_Mining_Comp/2013/NIJ2013_JAN01_DEC31.csv /project/ledra004/Data_Mining_Comp/Large_Sq/out.csv rectangle /project/ledra004/Data_Mining_Comp/Large_Sq/Large_Sq.csv
-
+//./pinhole shapefile Crimes Output rectangle DBFfile(shapefile_attributes)
 /* *********************************************************************
  *                   Description of this program      
  *
@@ -35,6 +35,9 @@
 
 // Enable extra output
 #define VERBOSE 0
+
+// Enable total crime field
+#define TC 0
 
 
 //structs for storing input data
@@ -293,7 +296,9 @@ typedef struct crime_in_area{
 	
 	//keeping track of the crimes committed in this area per week 
     //(a little over 52 weeks in a year - last week pooled with second to last)
+    #if TC
 	int total_crimes[52];
+    #endif
 	int street_crimes[52];
 	int burglaries[52];
 	int motor_vehicle_theft[52];
@@ -383,10 +388,12 @@ int convert_crime_data_to_attribute_array(attribute_header_t* at_header, attribu
 		at_header->header[x++] = ',';
 		at_header->header[x++] = 'o';
 		at_header_time_append(at_header, i, &x, year);
+        #if TC
 		at_header->header[x++] = ',';
 		at_header->header[x++] = 't';
 		at_header->header[x++] = 'c';
 		at_header_time_append(at_header, i, &x, year);
+        #endif
 	}
 	at_header->length = x;
     
@@ -523,7 +530,9 @@ int convert_crime_data_to_attribute_array(attribute_header_t* at_header, attribu
 	{
 		for (int x=0;x<52;x++)
 		{
+            #if TC
 			crime_in_area_array[i].total_crimes[x] = 0;
+            #endif
 			crime_in_area_array[i].street_crimes[x] = 0;
 			crime_in_area_array[i].burglaries[x] = 0;
 			crime_in_area_array[i].motor_vehicle_theft[x] = 0;
@@ -598,8 +607,10 @@ int convert_crime_data_to_attribute_array(attribute_header_t* at_header, attribu
 				else if (ct == 'a') crime_in_area_array[attribute_array_position_in].motor_vehicle_theft[week] += 1;
 				else if (ct == 'o') crime_in_area_array[attribute_array_position_in].other[week] += 1;
 				
+                #if TC
 				//always update the totals
 				crime_in_area_array[attribute_array_position_in].total_crimes[week] += 1;
+                #endif
 			}
 			else if (x_position+1 == x_array_length) continue;//fprintf(stderr, "out of bounds 2\n");
 			else if ( check_if_correct_shape(shapefile_data_sorted_by_x[x_position + 1].y_array[y_position], crime_data_array[i]) )
@@ -676,8 +687,10 @@ int convert_crime_data_to_attribute_array(attribute_header_t* at_header, attribu
 			arr_index+=1;
 			append_attribute(toCharArray(crime_in_area_array[i].other[x]), &arr_index, &attribute_array_local, i);
 			arr_index+=1;
+            #if TC
 			append_attribute(toCharArray(crime_in_area_array[i].total_crimes[x]), &arr_index, &attribute_array_local, i);
             arr_index+=1;
+            #endif
 		}
 	}
     
